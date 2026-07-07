@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOWNLOADS_DIR="${UMBREL_ROOT}/data/storage/downloads"
+DESIRED_OWNER="1000:1000"
+CONFIG_FILE="${APP_DATA_DIR}/data/config/config.ini"
+TRANSMISSION_CONFIG_FLAG="${APP_DATA_DIR}/TRANSMISSION_CONFIGURED_BY_UMBREL"
+
+ensure_downloads_dir() {
+	local -r path="${1}"
+
+	if [[ ! -d "${path}" ]]; then
+		mkdir -p "${path}"
+	fi
+
+	if [[ -d "${path}" ]]; then
+		owner=$(stat -c "%u:%g" "${path}")
+		if [[ "${owner}" != "${DESIRED_OWNER}" ]]; then
+			chown "${DESIRED_OWNER}" "${path}"
+		fi
+	fi
+}
+
+ensure_downloads_dir "${DOWNLOADS_DIR}/books"
+ensure_downloads_dir "${DOWNLOADS_DIR}/audiobooks"
+ensure_downloads_dir "${DOWNLOADS_DIR}/magazines"
+ensure_downloads_dir "${DOWNLOADS_DIR}/comics"
+ensure_downloads_dir "${DOWNLOADS_DIR}/complete/books"
+ensure_downloads_dir "${DOWNLOADS_DIR}/complete/audiobooks"
+ensure_downloads_dir "${DOWNLOADS_DIR}/complete/magazines"
+ensure_downloads_dir "${DOWNLOADS_DIR}/complete/comics"
+
+set_ini_value() {
+	local -r file="${1}"
+	local -r section="${2}"
+	local -r key="${3}"
+	local -r value="${4}"
+	local tmp
+	tmp="$(mktemp)"
+
+	awk -v section="${section}" -v key="${key}" -v value="${value}" '
+		function trim(str) {
+			gsub(/^[ \t]+|[ \t]+$/, "", str)
+			return str
+		}
+
+		function write_key() {
+			print key " = " value
+			key_written = 1
+		}
+
+		BEGIN {
+			target_section = "[" tolower(section) "]"
+			in_section = 0
+			section_found = 0
+			key_written = 0
+		}
+
+		{
+			line = $0
+			normalized = tolower(trim(line))
+
+			if (normalized ~ /^\[[^]]+\]$/) {
+				if (in_section && !key_written) {
+					write_key()
+				}
+				in_section = 0
+			}
+
+			if (normalized == target_section) {
+				in_section = 1
+				section_found = 1
+				key_written = 0
+				print line
+				next
+			}
+
+			if (in_section) {
+				line_key = line
+				sub(/=.*/, "", line_key)
+				line_key = tolower(trim(line_key))
+				if (line_key == tolower(key)) {
+					if (!key_written) {
+						write_key()
+					}
+					next
+				}
+			}
+
+			print line
+		}
+
+		END {
+			if (!section_found) {
+				print ""
+				print "[" section "]"
+				write_key()
+			} else if (in_section && !key_written) {
+				write_key()
+			}
+		}
+	' "${file}" > "${tmp}"
+
+	mv "${tmp}" "${file}"
+}
+
+configure_transmission_if_available() {
+	if [[ -f "${TRANSMISSION_CONFIG_FLAG}" ]]; then
+		return
+	fi
+
+	if ! "${UMBREL_ROOT}/scripts/app" ls-installed | grep --quiet 'transmission'; then
+		return
+	fi
+
+	if grep -Eiq '^[[:space:]]*(tor_downloader_|nzb_downloader_).*= *1' "${CONFIG_FILE}"; then
+		echo "LazyLibrarian already has an active download client configured. Skipping Transmission auto-configuration."
+		return
+	fi
+
+	set_ini_value "${CONFIG_FILE}" "TORRENT" "tor_downloader_transmission" "1"
+	set_ini_value "${CONFIG_FILE}" "TRANSMISSION" "transmission_host" "transmission_server_1"
+	set_ini_value "${CONFIG_FILE}" "TRANSMISSION" "transmission_port" "9091"
+	set_ini_value "${CONFIG_FILE}" "TRANSMISSION" "transmission_base" "/transmission"
+	set_ini_value "${CONFIG_FILE}" "TRANSMISSION" "transmission_dir" "/downloads/complete"
+	set_ini_value "${CONFIG_FILE}" "TRANSMISSION" "transmission_label" "books,audiobooks,magazines,comics"
+	touch "${TRANSMISSION_CONFIG_FLAG}"
+}
+
+touch "${CONFIG_FILE}"
+configure_transmission_if_available

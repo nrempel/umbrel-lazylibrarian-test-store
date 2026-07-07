@@ -11,10 +11,10 @@ description: >-
   SETUP INSTRUCTIONS
 
 
-  LazyLibrarian stores its configuration in persistent Umbrel app data and can use Umbrel's shared Downloads folder at /downloads. Common library folders are /downloads/books for ebooks, /downloads/audiobooks for audiobooks, /downloads/magazines for magazines, and /downloads/comics for comics.
+  LazyLibrarian on umbrelOS is pre-configured to use Umbrel's shared Downloads folder. It stores ebooks under /downloads/books, audiobooks under /downloads/audiobooks, magazines under /downloads/magazines, and comics under /downloads/comics. Completed downloads are watched under /downloads/complete.
 
 
-  Configure your preferred download client in LazyLibrarian after install. Transmission, qBittorrent, and SABnzbd can be installed separately from the Umbrel App Store. Add providers/indexers directly in LazyLibrarian, or use Prowlarr by adding its Torznab/Newznab feeds as providers.
+  If Transmission is installed from the Umbrel App Store, LazyLibrarian will automatically configure it as a torrent download client. Add providers/indexers directly in LazyLibrarian after install, or use Prowlarr by adding its Torznab/Newznab feeds as providers. qBittorrent and SABnzbd can also be configured manually in LazyLibrarian if preferred.
 
 
   LazyLibrarian opens behind Umbrel authentication by default. If you expose it outside Umbrel's protected app proxy, configure LazyLibrarian's own authentication in Interface settings.
