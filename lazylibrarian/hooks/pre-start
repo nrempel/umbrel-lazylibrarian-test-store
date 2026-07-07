@@ -4,7 +4,8 @@ set -euo pipefail
 DOWNLOADS_DIR="${UMBREL_ROOT}/data/storage/downloads"
 DESIRED_OWNER="1000:1000"
 CONFIG_FILE="${APP_DATA_DIR}/data/config/config.ini"
-TRANSMISSION_CONFIG_FLAG="${APP_DATA_DIR}/TRANSMISSION_CONFIGURED_BY_UMBREL"
+TORRENT_CONFIG_FLAG="${APP_DATA_DIR}/TORRENT_CLIENT_CONFIGURED_BY_UMBREL"
+SABNZBD_CONFIG_FLAG="${APP_DATA_DIR}/SABNZBD_CONFIGURED_BY_UMBREL"
 
 ensure_downloads_dir() {
 	local -r path="${1}"
@@ -25,6 +26,7 @@ ensure_downloads_dir "${DOWNLOADS_DIR}/books"
 ensure_downloads_dir "${DOWNLOADS_DIR}/audiobooks"
 ensure_downloads_dir "${DOWNLOADS_DIR}/magazines"
 ensure_downloads_dir "${DOWNLOADS_DIR}/comics"
+ensure_downloads_dir "${DOWNLOADS_DIR}/complete"
 ensure_downloads_dir "${DOWNLOADS_DIR}/complete/books"
 ensure_downloads_dir "${DOWNLOADS_DIR}/complete/audiobooks"
 ensure_downloads_dir "${DOWNLOADS_DIR}/complete/magazines"
@@ -104,28 +106,113 @@ set_ini_value() {
 	mv "${tmp}" "${file}"
 }
 
-configure_transmission_if_available() {
-	if [[ -f "${TRANSMISSION_CONFIG_FLAG}" ]]; then
-		return
-	fi
+is_app_installed() {
+	local -r app="${1}"
 
-	if ! "${UMBREL_ROOT}/scripts/app" ls-installed | grep --quiet 'transmission'; then
-		return
-	fi
+	"${UMBREL_ROOT}/scripts/app" ls-installed | grep --quiet "${app}"
+}
 
-	if grep -Eiq '^[[:space:]]*(tor_downloader_|nzb_downloader_).*= *1' "${CONFIG_FILE}"; then
-		echo "LazyLibrarian already has an active download client configured. Skipping Transmission auto-configuration."
-		return
-	fi
+has_active_torrent_downloader() {
+	grep -Eiq '^[[:space:]]*tor_downloader_[^=]*=[[:space:]]*1' "${CONFIG_FILE}"
+}
 
+has_active_usenet_downloader() {
+	grep -Eiq '^[[:space:]]*nzb_downloader_[^=]*=[[:space:]]*1' "${CONFIG_FILE}"
+}
+
+configure_transmission() {
 	set_ini_value "${CONFIG_FILE}" "TORRENT" "tor_downloader_transmission" "1"
 	set_ini_value "${CONFIG_FILE}" "TRANSMISSION" "transmission_host" "transmission_server_1"
 	set_ini_value "${CONFIG_FILE}" "TRANSMISSION" "transmission_port" "9091"
 	set_ini_value "${CONFIG_FILE}" "TRANSMISSION" "transmission_base" "/transmission"
 	set_ini_value "${CONFIG_FILE}" "TRANSMISSION" "transmission_dir" "/downloads/complete"
 	set_ini_value "${CONFIG_FILE}" "TRANSMISSION" "transmission_label" "books,audiobooks,magazines,comics"
-	touch "${TRANSMISSION_CONFIG_FLAG}"
+}
+
+configure_qbittorrent() {
+	set_ini_value "${CONFIG_FILE}" "TORRENT" "tor_downloader_qbittorrent" "1"
+	set_ini_value "${CONFIG_FILE}" "QBITTORRENT" "qbittorrent_host" "qbittorrent_server_1"
+	set_ini_value "${CONFIG_FILE}" "QBITTORRENT" "qbittorrent_port" "8080"
+	set_ini_value "${CONFIG_FILE}" "QBITTORRENT" "qbittorrent_base" ""
+	set_ini_value "${CONFIG_FILE}" "QBITTORRENT" "qbittorrent_user" ""
+	set_ini_value "${CONFIG_FILE}" "QBITTORRENT" "qbittorrent_pass" ""
+	set_ini_value "${CONFIG_FILE}" "QBITTORRENT" "qbittorrent_label" ""
+	set_ini_value "${CONFIG_FILE}" "QBITTORRENT" "qbittorrent_dir" "/downloads/complete"
+}
+
+configure_torrent_client_if_available() {
+	if [[ -f "${TORRENT_CONFIG_FLAG}" ]]; then
+		return
+	fi
+
+	if has_active_torrent_downloader; then
+		echo "LazyLibrarian already has an active torrent client configured. Skipping torrent client auto-configuration."
+		return
+	fi
+
+	if is_app_installed "transmission"; then
+		configure_transmission
+		touch "${TORRENT_CONFIG_FLAG}"
+		return
+	fi
+
+	if is_app_installed "qbittorrent"; then
+		configure_qbittorrent
+		touch "${TORRENT_CONFIG_FLAG}"
+		return
+	fi
+}
+
+get_sabnzbd_api_key() {
+	local -r sabnzbd_config="${UMBREL_ROOT}/app-data/sabnzbd/data/config/sabnzbd.ini"
+
+	if [[ ! -f "${sabnzbd_config}" ]]; then
+		return
+	fi
+
+	awk -F= '
+		/^[[:space:]]*api_key[[:space:]]*=/ {
+			value = $2
+			gsub(/^[ \t]+|[ \t]+$/, "", value)
+			print value
+			exit
+		}
+	' "${sabnzbd_config}"
+}
+
+configure_sabnzbd_if_available() {
+	local sabnzbd_api_key
+
+	if [[ -f "${SABNZBD_CONFIG_FLAG}" ]]; then
+		return
+	fi
+
+	if ! is_app_installed "sabnzbd"; then
+		return
+	fi
+
+	if has_active_usenet_downloader; then
+		echo "LazyLibrarian already has an active Usenet client configured. Skipping SABnzbd auto-configuration."
+		return
+	fi
+
+	sabnzbd_api_key="$(get_sabnzbd_api_key)"
+	if [[ -z "${sabnzbd_api_key}" ]]; then
+		echo "SABnzbd is installed, but its API key is not available yet. Skipping SABnzbd auto-configuration."
+		return
+	fi
+
+	set_ini_value "${CONFIG_FILE}" "USENET" "nzb_downloader_sabnzbd" "1"
+	set_ini_value "${CONFIG_FILE}" "SABnzbd" "sab_host" "sabnzbd_web_1"
+	set_ini_value "${CONFIG_FILE}" "SABnzbd" "sab_port" "8080"
+	set_ini_value "${CONFIG_FILE}" "SABnzbd" "sab_subdir" ""
+	set_ini_value "${CONFIG_FILE}" "SABnzbd" "sab_user" ""
+	set_ini_value "${CONFIG_FILE}" "SABnzbd" "sab_pass" ""
+	set_ini_value "${CONFIG_FILE}" "SABnzbd" "sab_api" "${sabnzbd_api_key}"
+	set_ini_value "${CONFIG_FILE}" "SABnzbd" "sab_cat" ""
+	touch "${SABNZBD_CONFIG_FLAG}"
 }
 
 touch "${CONFIG_FILE}"
-configure_transmission_if_available
+configure_torrent_client_if_available
+configure_sabnzbd_if_available
