@@ -5,27 +5,27 @@ name: LazyLibrarian
 version: "4529bef5-ls308"
 tagline: Manage and automate your digital reading library
 description: >-
-  LazyLibrarian is a self-hosted reading collection manager for ebooks, audiobooks, magazines, and comics. It can follow authors, track wanted titles, fetch metadata, search configured providers, and send matching releases to supported download clients or blackhole/watch folders.
+  LazyLibrarian is a self-hosted manager for ebooks, audiobooks, magazines, and comics. It can follow authors, track wanted titles, fetch metadata, search configured providers, and send matching releases to supported download clients or watch folders.
 
 
   SETUP INSTRUCTIONS
 
 
-  LazyLibrarian stores its configuration in persistent Umbrel app data and can read and write Umbrel's shared Downloads folder at `/downloads`.
+  LazyLibrarian stores its configuration in persistent Umbrel app data and can read and write Umbrel's shared Downloads folder at /downloads.
 
 
   Recommended first-run paths:
 
 
-  - Use `/downloads/books` as your ebook library or completed ebook folder.
+  - Use /downloads/books for ebooks.
 
-  - Use `/downloads/audiobooks` as your audiobook folder if you manage audiobooks.
+  - Use /downloads/audiobooks for audiobooks.
 
-  - Use `/downloads/magazines` or `/downloads/comics` if you manage those formats.
+  - Use /downloads/magazines or /downloads/comics for magazines and comics.
 
-  - Configure your download client in LazyLibrarian's settings. Transmission, qBittorrent, and SABnzbd can be installed separately from the Umbrel App Store.
+  - Configure your download client in LazyLibrarian. Transmission, qBittorrent, and SABnzbd can be installed separately from the Umbrel App Store.
 
-  - Add providers/indexers in LazyLibrarian. Prowlarr can be used by adding its Torznab/Newznab feeds as providers.
+  - Add providers/indexers in LazyLibrarian, or use Prowlarr by adding its Torznab/Newznab feeds as providers.
 
 
   LazyLibrarian opens behind Umbrel authentication by default. If you expose it outside Umbrel's protected app proxy, configure LazyLibrarian's own authentication in Interface settings.
