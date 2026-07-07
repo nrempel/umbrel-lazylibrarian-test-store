@@ -5,27 +5,16 @@ name: LazyLibrarian
 version: "4529bef5-ls308"
 tagline: Manage and automate your digital reading library
 description: >-
-  LazyLibrarian is a self-hosted manager for ebooks, audiobooks, magazines, and comics. It can follow authors, track wanted titles, fetch metadata, search configured providers, and send matching releases to supported download clients or watch folders.
+  LazyLibrarian is a self-hosted collection manager for ebooks, audiobooks, magazines, and comics. It can follow authors, track wanted titles, fetch metadata, search configured providers, and send matching releases to supported download clients or watch folders.
 
 
   SETUP INSTRUCTIONS
 
 
-  LazyLibrarian stores its configuration in persistent Umbrel app data and can read and write Umbrel's shared Downloads folder at /downloads.
+  LazyLibrarian stores its configuration in persistent Umbrel app data and can use Umbrel's shared Downloads folder at /downloads. Common library folders are /downloads/books for ebooks, /downloads/audiobooks for audiobooks, /downloads/magazines for magazines, and /downloads/comics for comics.
 
 
-  Recommended first-run paths:
-
-
-  - Use /downloads/books for ebooks.
-
-  - Use /downloads/audiobooks for audiobooks.
-
-  - Use /downloads/magazines or /downloads/comics for magazines and comics.
-
-  - Configure your download client in LazyLibrarian. Transmission, qBittorrent, and SABnzbd can be installed separately from the Umbrel App Store.
-
-  - Add providers/indexers in LazyLibrarian, or use Prowlarr by adding its Torznab/Newznab feeds as providers.
+  Configure your preferred download client in LazyLibrarian after install. Transmission, qBittorrent, and SABnzbd can be installed separately from the Umbrel App Store. Add providers/indexers directly in LazyLibrarian, or use Prowlarr by adding its Torznab/Newznab feeds as providers.
 
 
   LazyLibrarian opens behind Umbrel authentication by default. If you expose it outside Umbrel's protected app proxy, configure LazyLibrarian's own authentication in Interface settings.
