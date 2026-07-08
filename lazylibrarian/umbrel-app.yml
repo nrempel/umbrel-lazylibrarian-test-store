@@ -17,9 +17,6 @@ description: >-
   On startup, LazyLibrarian will configure compatible download clients already installed from the Umbrel App Store: Transmission is preferred for torrents, qBittorrent is used if Transmission is not installed, and SABnzbd is enabled for Usenet when its API key is available. Add providers/indexers directly in LazyLibrarian, or use Prowlarr by adding its Torznab/Newznab feeds as providers.
 
 
-  BookLore and Calibre Web keep their own app libraries by default. Import books from /downloads/books or configure those apps separately if you want them to share a library with LazyLibrarian.
-
-
   LazyLibrarian opens behind Umbrel authentication by default. If you expose it outside Umbrel's protected app proxy, configure LazyLibrarian's own authentication in Interface settings.
 releaseNotes: ""
 
